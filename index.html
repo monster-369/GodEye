@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Console — Simulation Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05070d;
+  --surface: #0a0f1c;
+  --surface-2: #0f1626;
+  --border: #1a2438;
+  --border-bright: #2a3a55;
+  --text: #e8edf5;
+  --text-dim: #8892a6;
+  --text-faint: #4a5568;
+  --accent: #ff2e63;
+  --accent-dim: #cc1f4e;
+  --accent-glow: rgba(255, 46, 99, 0.15);
+  --accent-glow-strong: rgba(255, 46, 99, 0.35);
+  --gold: #ffb800;
+  --ok: #00ff9d;
+  --cyan: #00b4ff;
+  --wa: #25d366;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(255, 46, 99, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(255, 184, 0, 0.03) 0%, transparent 45%),
+    linear-gradient(rgba(26, 36, 56, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 36, 56, 0.3) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+}
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5, 7, 13, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+}
+.header-inner {
+  max-width: 1400px; margin: 0 auto; height: 68px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.logo {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-weight: 700; font-size: 17px; letter-spacing: 0.5px;
+}
+.logo-mark {
+  width: 34px; height: 34px; border: 1.5px solid var(--accent);
+  border-radius: 8px; display: grid; place-items: center;
+  background: var(--accent-glow); box-shadow: 0 0 20px var(--accent-glow);
+}
+.logo-mark::before { content: '⚡'; color: var(--accent); font-size: 15px; text-shadow: 0 0 12px var(--accent); }
+.logo-text { color: var(--text); }
+.logo-text span { color: var(--accent); }
+.status-pill {
+  display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+  background: rgba(255, 46, 99, 0.06); border: 1px solid rgba(255, 46, 99, 0.2);
+  border-radius: 20px; font-family: var(--mono); font-size: 11px;
+  color: var(--accent); letter-spacing: 0.5px;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:.4;} }
+
+.hero { padding: 72px 32px 40px; max-width: 1400px; margin: 0 auto; text-align: center; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; background: var(--surface);
+  border: 1px solid var(--border-bright); border-radius: 100px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 24px;
+}
+.hero-badge .dot {
+  width: 5px; height: 5px; background: var(--accent); border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+}
+.hero h1 {
+  font-size: clamp(38px, 6vw, 68px); font-weight: 900; line-height: 1.05;
+  letter-spacing: -2px; margin-bottom: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #d8b8c5 40%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 17px; color: var(--text-dim); max-width: 640px; margin: 0 auto; line-height: 1.6;
+}
+.hero p strong { color: var(--accent); font-weight: 600; }
+
+.console-wrap { max-width: 900px; margin: 40px auto 0; padding: 0 32px; }
+.console {
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--border-bright); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255, 46, 99, 0.05),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.console-bar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
+}
+.console-dots { display: flex; gap: 7px; }
+.console-dots span { width: 11px; height: 11px; border-radius: 50%; background: #2a3a55; }
+.console-dots span:nth-child(1) { background: #ff5f57; }
+.console-dots span:nth-child(2) { background: #febc2e; }
+.console-dots span:nth-child(3) { background: #28c840; }
+.console-title {
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); letter-spacing: 0.5px;
+}
+.console-body { padding: 28px; }
+
+.field-label {
+  display: block; font-family: var(--mono); font-size: 11px;
+  color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+}
+.field-label::before { content: '▸ '; color: var(--accent); }
+
+.input-group { display: flex; gap: 12px; margin-bottom: 20px; }
+.input-wrap { flex: 1; position: relative; }
+.input-wrap::before {
+  content: '$'; position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 15px; pointer-events: none;
+}
+#targetInput {
+  width: 100%; padding: 16px 18px 16px 40px; background: var(--bg);
+  border: 1px solid var(--border-bright); border-radius: 10px; color: var(--text);
+  font-family: var(--mono); font-size: 15px; letter-spacing: 0.5px; transition: all 0.2s;
+}
+#targetInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+#targetInput::placeholder { color: var(--text-faint); font-weight: 300; }
+
+.filter-label {
+  display: block; font-family: var(--mono); font-size: 11px;
+  color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+}
+.filter-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;
+}
+.filter-btn {
+  padding: 14px 8px;
+  background: var(--bg); border: 1px solid var(--border-bright);
+  border-radius: 10px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+  color: var(--text-dim); text-transform: uppercase; font-weight: 600;
+  transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.filter-btn .fi { font-size: 17px; }
+.filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.filter-btn.active {
+  background: var(--accent-glow); border-color: var(--accent); color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.filter-btn[data-filter="whatsapp"].active {
+  background: rgba(37,211,102,0.12); border-color: var(--wa); color: var(--wa);
+  box-shadow: 0 0 20px rgba(37,211,102,0.25);
+}
+.filter-btn[data-filter="call"].active {
+  background: rgba(0,180,255,0.12); border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0,180,255,0.25);
+}
+.filter-btn[data-filter="coro"].active {
+  background: rgba(255,184,0,0.12); border-color: var(--gold); color: var(--gold);
+  box-shadow: 0 0 20px rgba(255,184,0,0.25);
+}
+
+.btn-scan {
+  padding: 16px 32px; background: var(--accent); color: #05070d;
+  border: none; border-radius: 10px;
+  font-family: var(--mono); font-weight: 700; font-size: 13px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 0 24px var(--accent-glow); white-space: nowrap;
+}
+.btn-scan:hover:not(:disabled) {
+  background: #ff4d7a; box-shadow: 0 0 36px var(--accent-glow-strong);
+  transform: translateY(-1px);
+}
+.btn-scan:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.btn-halt {
+  padding: 16px 26px; background: transparent; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 10px;
+  font-family: var(--mono); font-weight: 700; font-size: 13px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn-halt:hover:not(:disabled) { background: rgba(255,46,99,0.1); box-shadow: 0 0 20px var(--accent-glow); }
+.btn-halt:disabled { opacity: .35; cursor: not-allowed; }
+.btn-halt:not(:disabled) { animation: halt-pulse 1.6s infinite; }
+@keyframes halt-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,46,99,0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(255,46,99,0); }
+}
+
+.controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.mini-label {
+  display: block; font-family: var(--mono); font-size: 10.5px;
+  color: var(--text-faint); letter-spacing: 1.2px;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.mini-input {
+  width: 100%; padding: 12px 14px; background: var(--bg);
+  border: 1px solid var(--border-bright); border-radius: 10px;
+  color: var(--text); font-family: var(--mono); font-size: 14px;
+  letter-spacing: 0.5px; transition: all 0.2s; text-align: center;
+}
+.mini-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+.action-row { display: flex; gap: 12px; }
+.action-row .btn-scan, .action-row .btn-halt { flex: 1; padding: 16px; }
+
+.hint {
+  font-family: var(--mono); font-size: 11px; color: var(--text-faint);
+  letter-spacing: 0.3px; margin-top: 12px;
+}
+.hint span { color: var(--accent-dim); }
+
+.progress-wrap { margin-top: 20px; display: none; }
+.progress-wrap.active { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.progress-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+}
+.progress-head #progressText { color: var(--accent); font-weight: 700; }
+
+.progress-track {
+  height: 6px; background: rgba(42,58,85,0.5);
+  border-radius: 99px; overflow: hidden; position: relative;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), #ff6b9d, var(--gold));
+  background-size: 200% 100%;
+  border-radius: 99px;
+  transition: width .18s ease;
+  box-shadow: 0 0 18px var(--accent-glow-strong);
+  animation: fill-shift 2.5s linear infinite;
+}
+@keyframes fill-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.stat-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; text-align: center;
+}
+.stat-box .k {
+  font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+  letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 4px;
+}
+.stat-box .v {
+  font-family: var(--mono); font-size: 18px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stat-box.sent .v { color: var(--ok); text-shadow: 0 0 12px rgba(0,255,157,0.35); }
+.stat-box.failed .v { color: var(--accent); text-shadow: 0 0 12px var(--accent-glow-strong); }
+.stat-box.total .v { color: var(--gold); text-shadow: 0 0 12px rgba(255,184,0,0.3); }
+
+.status-line {
+  margin-top: 16px; font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); letter-spacing: 0.5px; min-height: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.status-line.err {
+  color: #ff8ba0; padding: 10px 14px;
+  background: rgba(255,46,99,0.06); border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.status-line.ok { color: var(--ok); }
+
+.features {
+  max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;
+}
+.feature {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 26px; transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.feature::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.feature:hover { border-color: var(--border-bright); transform: translateY(-3px); }
+.feature:hover::before { opacity: 1; }
+.feature-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: grid; place-items: center;
+  background: var(--accent-glow); border: 1px solid rgba(255,46,99,0.2);
+  font-size: 19px; margin-bottom: 16px;
+}
+.feature h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+.feature p { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
+
+footer { border-top: 1px solid var(--border); padding: 32px; background: rgba(0,0,0,0.3); }
+.footer-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+}
+.footer-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+}
+.footer-brand .dev { color: var(--accent); font-weight: 700; letter-spacing: 0.5px; }
+.footer-note { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+
+@media (max-width: 640px) {
+  header { padding: 0 18px; }
+  .hero { padding: 48px 18px 24px; }
+  .console-wrap { padding: 0 18px; }
+  .console-body { padding: 20px; }
+  .input-group { flex-direction: column; }
+  .features { padding: 30px 18px 60px; }
+  .footer-inner { flex-direction: column; text-align: center; }
+  .controls-row { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <div class="logo-text">CYBER<span>-SIM</span></div>
+    </div>
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      SIMULATION MODE
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    FICTIONAL CONSOLE v1.0
+  </div>
+  <h1>Simulate. Visualize. Learn.</h1>
+  <p>Ye ek <strong>safe simulation UI</strong> hai — koi real SMS, call, ya WhatsApp request nahi jayegi. Sirf progress animation aur stats dikhte hain.</p>
+</section>
+
+<div class="console-wrap">
+  <div class="console">
+    <div class="console-bar">
+      <div class="console-dots"><span></span><span></span><span></span></div>
+      <div class="console-title">cyber@sim:~$ run_simulation</div>
+    </div>
+    <div class="console-body">
+
+      <label class="field-label" for="targetInput">Target Number (fake / demo)</label>
+      <div class="input-group">
+        <div class="input-wrap">
+          <input type="tel" id="targetInput" placeholder="Enter any 10-digit demo number" maxlength="15" autocomplete="off" inputmode="numeric">
+        </div>
+      </div>
+
+      <label class="filter-label">Channel (visual only)</label>
+      <div class="filter-grid" id="filterGrid">
+        <button class="filter-btn active" data-filter="all"><span class="fi">⚡</span>ALL</button>
+        <button class="filter-btn" data-filter="call"><span class="fi">📞</span>CALL</button>
+        <button class="filter-btn" data-filter="whatsapp"><span class="fi">💬</span>WHATSAPP</button>
+        <button class="filter-btn" data-filter="sms"><span class="fi">✉️</span>SMS</button>
+        <button class="filter-btn" data-filter="coro"><span class="fi">🔥</span>ORIGINAL</button>
+      </div>
+
+      <div class="controls-row">
+        <div>
+          <label class="mini-label" for="countInput">Loop Count</label>
+          <input type="number" id="countInput" class="mini-input" min="1" max="500" value="10">
+        </div>
+        <div>
+          <label class="mini-label" for="burstInput">Parallel Burst</label>
+          <input type="number" id="burstInput" class="mini-input" min="1" max="30" value="6">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-scan" id="fireBtn">▶ Simulate</button>
+        <button class="btn-halt" id="haltBtn" disabled>■ Halt</button>
+      </div>
+
+      <div class="hint">Format: <span>10-digit demo number</span> · Example: <span>9876543210</span> · Ye sirf simulation hai, koi real request nahi.</div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-head">
+          <span>Simulation Progress</span>
+          <span id="progressText">0 / 0</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box sent"><div class="k">Simulated OK</div><div class="v" id="statSent">0</div></div>
+          <div class="stat-box failed"><div class="k">Simulated Fail</div><div class="v" id="statFailed">0</div></div>
+          <div class="stat-box total"><div class="k">Total</div><div class="v" id="statTotal">0</div></div>
+        </div>
+      </div>
+
+      <div class="status-line" id="statusLine"></div>
+
+    </div>
+  </div>
+</div>
+
+<section class="features">
+  <div class="feature">
+    <div class="feature-icon">🧪</div>
+    <h3>100% Safe Simulation</h3>
+    <p>Koi network call nahi. Koi API nahi. Sirf local JavaScript se fake progress aur stats generate hote hain.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">🎨</div>
+    <h3>Cyberpunk UI</h3>
+    <p>Same dark console look — novel, demo, ya portfolio ke liye perfect.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">📊</div>
+    <h3>Live Fake Telemetry</h3>
+    <p>Random OK/Fail counters, animated progress bar, aur cycle status.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">🛑</div>
+    <h3>Instant Halt</h3>
+    <p>Simulation ko beech mein rok sakte ho — koi real effect nahi.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span>Developed by</span>
+      <span class="dev">SAFE DEMO</span>
+    </div>
+    <div class="footer-note">© 2026 Cyber-Sim · Fictional simulation only</div>
+  </div>
+</footer>
+
+<script>
+const FILTERS = ["call", "whatsapp", "sms", "coro"];
+
+const input = document.getElementById("targetInput");
+const countInput = document.getElementById("countInput");
+const burstInput = document.getElementById("burstInput");
+const fireBtn = document.getElementById("fireBtn");
+const haltBtn = document.getElementById("haltBtn");
+const filterGrid = document.getElementById("filterGrid");
+const progressWrap = document.getElementById("progressWrap");
+const progressFill = document.getElementById("progressFill");
+const progressText = document.getElementById("progressText");
+const statSent = document.getElementById("statSent");
+const statFailed = document.getElementById("statFailed");
+const statTotal = document.getElementById("statTotal");
+const statusLine = document.getElementById("statusLine");
+
+let selectedFilter = "all";
+let running = false;
+let stopFlag = false;
+let sent = 0, failed = 0, done = 0, total = 0;
+
+filterGrid.addEventListener("click", e => {
+  const btn = e.target.closest(".filter-btn");
+  if (!btn || running) return;
+  filterGrid.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedFilter = btn.dataset.filter;
+});
+
+function setStatus(msg, cls) {
+  statusLine.className = "status-line " + (cls || "");
+  statusLine.innerHTML = msg || "";
+}
+
+function refreshStats() {
+  statSent.textContent = sent;
+  statFailed.textContent = failed;
+  statTotal.textContent = sent + failed;
+}
+
+// Pure simulation — koi fetch, koi API nahi
+function simulateOne() {
+  return new Promise(resolve => {
+    const delay = 60 + Math.random() * 120;
+    setTimeout(() => {
+      const ok = Math.random() > 0.25; // 75% fake success
+      resolve(ok);
+    }, delay);
+  });
+}
+
+fireBtn.addEventListener("click", async () => {
+  if (running) return;
+
+  const num = input.value.replace(/\D/g, ""
